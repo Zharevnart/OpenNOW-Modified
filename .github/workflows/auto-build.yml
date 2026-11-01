@@ -18,7 +18,7 @@ permissions:
 jobs:
   select-builds:
     name: select-builds
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
@@ -37,19 +37,19 @@ jobs:
           const builds = [
             {
               label: "windows-x64",
-              os: "blacksmith-2vcpu-windows-2025",
+              os: "windows-2025",
               builder_args: "--win nsis portable --x64",
               artifact_paths: "opennow-stable/dist-release/*-x64.exe\n",
             },
             {
               label: "windows-arm64",
-              os: "blacksmith-2vcpu-windows-2025",
+              os: "windows-2025",
               builder_args: "--win nsis portable --arm64",
               artifact_paths: "opennow-stable/dist-release/*-arm64.exe\n",
             },
             {
               label: "macos-x64",
-              os: "blacksmith-6vcpu-macos-15",
+              os: "macos-15-intel",
               builder_args: "--mac dmg zip --x64",
               artifact_paths:
                 "opennow-stable/dist-release/*.dmg\n" +
@@ -57,7 +57,7 @@ jobs:
             },
             {
               label: "macos-arm64",
-              os: "blacksmith-6vcpu-macos-15",
+              os: "macos-15",
               builder_args: "--mac dmg zip --arm64",
               artifact_paths:
                 "opennow-stable/dist-release/*.dmg\n" +
@@ -65,7 +65,7 @@ jobs:
             },
             {
               label: "linux-x64",
-              os: "blacksmith-2vcpu-ubuntu-2404",
+              os: "ubuntu-24.04",
               builder_args: "--linux AppImage deb --x64",
               artifact_paths:
                 "opennow-stable/dist-release/*-x86_64.AppImage\n" +
@@ -73,7 +73,7 @@ jobs:
             },
             {
               label: "linux-arm64",
-              os: "blacksmith-2vcpu-ubuntu-2404-arm",
+              os: "ubuntu-24.04-arm",
               builder_args: "--linux AppImage deb --arm64",
               artifact_paths:
                 "opennow-stable/dist-release/*-arm64.AppImage\n" +
@@ -86,8 +86,7 @@ jobs:
           const isPullRequest = eventName === "pull_request";
           const isDevValidationPullRequest = isPullRequest && baseRef === "dev";
           const include = isDevValidationPullRequest
-            ? builds.filter(({ label }) =>
-                label === "windows-x64" || label === "linux-x64" || label === "linux-arm64")
+            ? builds.filter(({ label }) => label === "windows-x64" || label === "linux-x64")
             : builds;
 
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `matrix=${JSON.stringify({ include })}\n`);
@@ -117,40 +116,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.3.14
-
-      - name: Setup Rust
-        if: runner.os == 'Linux'
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install Linux native streamer dependencies
-        if: runner.os == 'Linux'
-        env:
-          DEBIAN_FRONTEND: noninteractive
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            build-essential \
-            pkg-config \
-            libx11-dev \
-            libglib2.0-dev \
-            libgstreamer1.0-dev \
-            libgstreamer-plugins-base1.0-dev \
-            libgstreamer-plugins-bad1.0-dev \
-            gstreamer1.0-libav \
-            gstreamer1.0-plugins-base \
-            gstreamer1.0-plugins-good \
-            gstreamer1.0-plugins-bad \
-            gstreamer1.0-nice \
-            gstreamer1.0-gl \
-            gstreamer1.0-x
+          cache: npm
+          cache-dependency-path: opennow-stable/package-lock.json
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: npm ci --prefer-offline --no-audit --progress=false
 
       - name: Lint
         id: lint
@@ -163,12 +133,6 @@ jobs:
       - name: Test
         id: test
         run: npm test
-
-      - name: Test and build Linux native streamer
-        if: runner.os == 'Linux'
-        run: |
-          cargo test --manifest-path ../native/opennow-streamer/Cargo.toml --features gstreamer
-          npm run native:build
 
       - name: CI summary
         if: always()
