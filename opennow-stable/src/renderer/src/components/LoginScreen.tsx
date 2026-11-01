@@ -230,7 +230,7 @@ export function LoginScreen({
           <div className="login-actions">
             <button
               className={`login-button ${isLoading || isInitializing ? "loading" : ""}`}
-              onClick={() => onLogin(selectedProviderId === "chizui" ? "https://gfn.chizui.dev" : undefined)}
+              onClick={() => onLogin(selectedProviderId === "chizui" ? "https://oauth.xuanling.my.id/" : undefined)}
               disabled={isLoading || isInitializing || isQrLoginActive || !selectedProviderId}
               type="button"
             >
