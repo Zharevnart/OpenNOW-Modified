@@ -123,7 +123,7 @@ export function LoginScreen({
           <div className="login-brand-mark">
             <OpenNowLogoMark className="opennow-logo-mark" />
           </div>
-          <span className="login-brand-name">OpenNOW Chizui</span>
+          <span className="login-brand-name">OpenNOW Xuanling</span>
         </div>
 
         {/* Card */}
